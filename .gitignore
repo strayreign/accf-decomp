@@ -1,0 +1,150 @@
+# -----------------------------------------------------------------------
+# Tom Hook system — AI-driven decomp loop; requires paid API keys,
+# local model setup, and proprietary tool paths.  Not for public repo.
+# -----------------------------------------------------------------------
+tools/autopilot.py
+tools/tom_hook.py
+tools/decomp_loop.py
+tools/self_healer.py
+# Backup files written by the session patcher
+tools/*.bak
+
+# -----------------------------------------------------------------------
+# Windows scripts and launchers — contain machine-local paths + API keys
+# -----------------------------------------------------------------------
+*.ps1
+*.bat
+
+# -----------------------------------------------------------------------
+# IDA Pro integration — requires commercial IDA Pro licence
+# -----------------------------------------------------------------------
+tools/ida_server.py
+tools/dol_loader.py
+ida_scripts/
+
+# -----------------------------------------------------------------------
+# Paid-API runtime state
+# -----------------------------------------------------------------------
+tools/claude_spend.json
+
+# -----------------------------------------------------------------------
+# Generated symbol / analysis artefacts
+# -----------------------------------------------------------------------
+tools/symbol_report.txt
+
+# -----------------------------------------------------------------------
+# Build artifacts
+# -----------------------------------------------------------------------
+build/
+.ninja_deps
+.ninja_log
+compile_commands.json
+# objdiff.json is tracked — decomp.dev reads progress_categories from it
+# objdiff.json
+
+# Compiler / linker artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+*.obj
+*.out
+*.pyc
+*.asm
+*.dol
+*.rel
+*.ninja
+*.d
+
+# Editor / IDE
+.DS_Store
+.cache/
+__pycache__/
+.continue/config.json
+
+# -----------------------------------------------------------------------
+# Decomp tooling runtime / state files
+# -----------------------------------------------------------------------
+tools/model_history.json
+tools/.decomp_dev_pct
+logs/
+.ninja_lock
+
+# -----------------------------------------------------------------------
+# IDA Pro / Ghidra project databases
+# -----------------------------------------------------------------------
+ida_projects/
+*.idb
+*.i64
+*.id0
+*.id1
+*.id2
+*.nam
+*.til
+ghidra_projects/**/*.db
+ghidra_projects/**/*.gbf
+ghidra_projects/**/*.lock
+ghidra_projects/**/*.lock~
+ghidra_projects/**/~*
+
+# -----------------------------------------------------------------------
+# Machine-specific MCP / local config
+# -----------------------------------------------------------------------
+tools/mcp_config.json
+tools/mcp_servers/
+objdiff-mcp/
+
+# -----------------------------------------------------------------------
+# Licensed Nintendo data — ROM images, DOLs, RELs, WADs, SDK binaries
+# These files contain Nintendo intellectual property and must never be
+# committed.  The .dol / .rel patterns above already cover build outputs;
+# the patterns below cover source / ROM material.
+# -----------------------------------------------------------------------
+*.iso
+*.wbfs
+*.wia
+*.ciso
+*.gcm
+*.wad
+*.tmd
+*.ticket
+*.app
+# Raw ROM dumps or extracted disc images
+*.img
+# Official Nintendo / CodeWarrior SDK binaries and archives
+*.a
+*.lib
+mwcceppc*
+mwldeppc*
+# SDK source trees that may have been extracted locally
+data/sdk_sources/
+
+# -----------------------------------------------------------------------
+# Scraped / auto-downloaded third-party symbol data and SDK headers
+# These are fetched at runtime by resource_scraper.py and must not be
+# committed — they are either copyrighted or under restrictive licences.
+# -----------------------------------------------------------------------
+data/scraped/
+data/scraped/**
+
+# -----------------------------------------------------------------------
+# Generated hint / context files derived from Nintendo / SDK data
+# (these embed symbol names or code patterns extracted from game files)
+# -----------------------------------------------------------------------
+data/sdk_signatures.json
+data/ghidra_symbols.json
+data/nl_symbols.json
+data/bbq_symbols.json
+data/ac_class_context.txt
+data/dwc_context.txt
+data/symbol_hints.json
+data/strategy_notes.txt
+
+# -----------------------------------------------------------------------
+# Scraper and SDK-ingestion tooling
+# These scripts reference external proprietary sources; keeping them out
+# of the public repo avoids drawing attention to what is being scraped.
+# -----------------------------------------------------------------------
+tools/resource_scraper.py
+tools/ingest_sdk_sources.py
+tools/rebuild_sdk_and_hints.sh

@@ -1,0 +1,12 @@
+CompileFlags:
+  Add: [
+    # Remove all built-in definitions
+    "-undef",
+
+    # MWCC flags for GC
+    "-D__MWERKS__=0x3202",
+    "-D__PPCGEKKO__",
+
+    # Indicator for things which shouldn't be processed in IDEs
+    "-DDECOMP_IDE_FLAG",
+  ]

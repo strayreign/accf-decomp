@@ -1,0 +1,13 @@
+# See config.example.yml for documentation.
+object_base: orig/RUUE01
+object: sys/main.dol
+hash: a1ce84f78986b18c7b63c4c58b61841117f8c087
+symbols: config/RUUE01/symbols.txt
+splits: config/RUUE01/splits.txt
+# Skip function boundary analysis on repeat runs.
+# Prevents CFA from creating false overlapping functions when
+# symbols.txt and splits.txt already exist from initial analysis.
+quick_analysis: true
+# Change this to match the linker version.
+# See config.example.yml for a list.
+mw_comment_version: 11

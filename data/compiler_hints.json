@@ -1,0 +1,85 @@
+{
+  "diagnoses": {
+    "main/auto_03_800075C0_text": {
+      "unit_name": "main/auto_03_800075C0_text_text",
+      "issue_type": "float_operations",
+      "confidence": 0.15,
+      "suggested_fix": "Check float precision or disable FMA (-fp off)",
+      "evidence": [
+        "Float/double pointers (may have precision issues)"
+      ]
+    }
+  },
+  "fixes_applied": {
+    "auto_03_8022AF78_text": {
+      "fix_level": 1,
+      "fix_name": "unsigned-char",
+      "flags": [
+        "-unsigned-char"
+      ]
+    },
+    "auto_03_80452694_text": {
+      "fix_level": 1,
+      "fix_name": "unsigned-char",
+      "flags": [
+        "-unsigned-char"
+      ]
+    }
+  },
+  "escalation_ladder": [
+    {
+      "level": 0,
+      "name": "baseline",
+      "flags": [],
+      "description": "Default mwcceppc 1.1 -O2"
+    },
+    {
+      "level": 1,
+      "name": "unsigned-char",
+      "flags": [
+        "-unsigned-char"
+      ],
+      "description": "Force unsigned char"
+    },
+    {
+      "level": 2,
+      "name": "signed-char",
+      "flags": [
+        "-signed-char"
+      ],
+      "description": "Force signed char"
+    },
+    {
+      "level": 3,
+      "name": "fp-off",
+      "flags": [
+        "-fp off"
+      ],
+      "description": "Disable float contraction"
+    },
+    {
+      "level": 4,
+      "name": "inline-off",
+      "flags": [
+        "-inline off"
+      ],
+      "description": "Disable inlining"
+    },
+    {
+      "level": 5,
+      "name": "o0",
+      "flags": [
+        "-O0"
+      ],
+      "description": "No optimization"
+    },
+    {
+      "level": 6,
+      "name": "o1",
+      "flags": [
+        "-O1"
+      ],
+      "description": "Basic optimization"
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+    "progress_categories": {
+        "game": "Game Code",
+        "nw4r": "NintendoWare Code",
+        "egg": "EGG Code",
+        "crt": "MSL C Runtime Code",
+        "sdk": "RevoSDK Code"
+    },
+    "asflags": [
+        "-mgekko",
+        "--strip-local-absolute"
+    ],
+    "ldflags": [
+        "-fp hardware",
+        "-nodefaults"
+    ],
+    "cflags": {
+        "base": {
+            "flags": [
+                "-nodefaults",
+                "-proc gekko",
+                "-align powerpc",
+                "-enum int",
+                "-fp hardware",
+                "-Cpp_exceptions off",
+                "-O4,p",
+                "-inline auto",
+                "-pragma \"cats off\"",
+                "-pragma \"warn_notinlined off\"",
+                "-maxerrors 1",
+                "-nosyspath",
+                "-RTTI off",
+                "-fp_contract on",
+                "-str reuse",
+                "-multibyte"
+            ]
+        },
+        "runtime": {
+            "base": "base",
+            "flags": [
+                "-use_lmw_stmw on",
+                "-str reuse,pool,readonly",
+                "-gccinc",
+                "-common off",
+                "-inline auto"
+            ]
+        },
+        "rel": {
+            "base": "base",
+            "flags": [
+                "-sdata 0",
+                "-sdata2 0"
+            ]
+        }
+    }
+}
