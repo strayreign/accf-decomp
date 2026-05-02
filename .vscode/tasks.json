@@ -1,0 +1,62 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "configure RUUE01",
+      "type": "shell",
+      "command": "python",
+      "linux": { "command": "python3" },
+      "args": [
+        "configure.py",
+        "--version",
+        "RUUE01"
+      ],
+      "problemMatcher": [],
+      "group": "none"
+    },
+    {
+      "label": "ninja",
+      "type": "shell",
+      "command": "ninja",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "ninja diff",
+      "type": "shell",
+      "command": "ninja",
+      "args": ["diff"],
+      "problemMatcher": []
+    },
+    {
+      "label": "decompctx (current file)",
+      "type": "shell",
+      "command": "python",
+      "linux": { "command": "python3" },
+      "args": [
+        "tools/decompctx.py",
+        "${relativeFile}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": "none"
+    },
+    {
+      "label": "Python (current file)",
+      "type": "shell",
+      "command": "python",
+      "linux": { "command": "python3" },
+      "args": ["${relativeFile}"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": "none"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "learned": [
+    {
+      "incident_kind": "ida_crash",
+      "signature": {
+        "rc_hex": "c0000005"
+      },
+      "actions": [
+        {
+          "kind": "write_recovery",
+          "params": {
+            "action": "disable_auto_analysis"
+          }
+        },
+        {
+          "kind": "restart_service",
+          "params": {
+            "service": "ida"
+          }
+        }
+      ],
+      "successes": 0,
+      "failures": 1
+    }
+  ]
+}

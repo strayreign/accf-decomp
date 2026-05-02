@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ACCF Council Dashboard</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #c9d1d9; --text-dim: #8b949e; --text-bright: #f0f6fc;
+    --accent: #58a6ff; --green: #3fb950; --red: #f85149;
+    --orange: #d29922; --purple: #bc8cff; --pink: #f778ba;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
+  h1 { color: var(--text-bright); font-size: 1.5em; margin-bottom: 4px; }
+  .subtitle { color: var(--text-dim); font-size: 0.85em; margin-bottom: 20px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .card h2 { color: var(--text-bright); font-size: 1.05em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .icon { font-size: 1.2em; }
+  .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-label { color: var(--text-dim); font-size: 0.85em; }
+  .stat-value { color: var(--text-bright); font-weight: 600; font-size: 1.1em; }
+  .stat-big { font-size: 2em; color: var(--accent); font-weight: 700; line-height: 1; }
+  .stat-unit { font-size: 0.7em; color: var(--text-dim); font-weight: 400; }
+
+  /* Model bars */
+  .model-bar-wrap { margin-bottom: 10px; }
+  .model-bar-header { display: flex; justify-content: space-between; margin-bottom: 3px; }
+  .model-name { font-size: 0.85em; font-weight: 600; }
+  .model-stat { font-size: 0.75em; color: var(--text-dim); }
+  .model-bar { height: 22px; background: var(--border); border-radius: 4px; overflow: hidden; position: relative; }
+  .model-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; display: flex; align-items: center; padding-left: 6px; font-size: 0.7em; font-weight: 600; color: var(--bg); min-width: fit-content; }
+
+  /* Ladder */
+  .ladder { display: flex; flex-direction: column; gap: 6px; }
+  .ladder-step { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; background: var(--bg); border: 1px solid var(--border); }
+  .ladder-step.active { border-color: var(--accent); background: rgba(88,166,255,0.08); }
+  .ladder-rank { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7em; font-weight: 700; flex-shrink: 0; }
+  .ladder-info { flex: 1; }
+  .ladder-model { font-size: 0.85em; font-weight: 600; }
+  .ladder-detail { font-size: 0.7em; color: var(--text-dim); }
+  .ladder-gpu { font-size: 0.7em; color: var(--text-dim); padding: 2px 6px; background: var(--border); border-radius: 3px; }
+
+  /* Size buckets */
+  .bucket-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .bucket-label { width: 110px; font-size: 0.8em; color: var(--text-dim); text-align: right; flex-shrink: 0; }
+  .bucket-bar { flex: 1; height: 18px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .bucket-fill { height: 100%; border-radius: 3px; display: flex; align-items: center; padding-left: 5px; font-size: 0.65em; font-weight: 600; }
+  .bucket-count { width: 35px; font-size: 0.75em; color: var(--text-dim); text-align: right; flex-shrink: 0; }
+
+  /* Dialogue */
+  .dialogue { max-height: 400px; overflow-y: auto; }
+  .msg { display: flex; gap: 10px; margin-bottom: 10px; padding: 10px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); }
+  .msg-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7em; font-weight: 700; flex-shrink: 0; color: var(--bg); }
+  .msg-body { flex: 1; min-width: 0; }
+  .msg-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
+  .msg-name { font-size: 0.85em; font-weight: 600; }
+  .msg-time { font-size: 0.7em; color: var(--text-dim); }
+  .msg-text { font-size: 0.8em; color: var(--text); line-height: 1.4; }
+  .msg-result { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 0.75em; font-weight: 600; margin-top: 4px; }
+  .msg-result.fail { background: rgba(248,81,73,0.15); color: var(--red); }
+  .msg-result.partial { background: rgba(210,153,34,0.15); color: var(--orange); }
+  .msg-result.success { background: rgba(63,185,80,0.15); color: var(--green); }
+
+  /* Recent table */
+  .recent-table { width: 100%; font-size: 0.8em; }
+  .recent-table th { text-align: left; color: var(--text-dim); font-weight: 500; padding: 4px 8px; border-bottom: 1px solid var(--border); }
+  .recent-table td { padding: 5px 8px; border-bottom: 1px solid var(--border); }
+  .pct-badge { padding: 1px 6px; border-radius: 3px; font-weight: 600; font-size: 0.85em; }
+
+  /* Routing info */
+  .route-box { padding: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px; }
+  .route-title { font-size: 0.8em; font-weight: 600; color: var(--accent); margin-bottom: 4px; }
+  .route-desc { font-size: 0.75em; color: var(--text-dim); line-height: 1.4; }
+  .route-arrow { color: var(--accent); margin: 0 4px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* Refresh indicator */
+  .refresh-note { text-align: center; color: var(--text-dim); font-size: 0.75em; margin-top: 12px; padding: 8px; }
+  .refresh-note code { background: var(--border); padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+
+  @media (max-width: 900px) {
+    .grid, .grid-3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<h1>ACCF Decompilation Council</h1>
+<p class="subtitle">Animal Crossing: City Folk (RUUE01) &mdash; Autonomous Pipeline Dashboard</p>
+
+<div class="grid-3">
+  <div class="card" style="text-align:center;">
+    <div class="stat-big">477</div>
+    <div class="stat-label">Units Attempted</div>
+  </div>
+  <div class="card" style="text-align:center;">
+    <div class="stat-big">614</div>
+    <div class="stat-label">Log Files</div>
+  </div>
+  <div class="card" style="text-align:center;">
+    <div class="stat-big" style="color:var(--orange);">87%</div>
+    <div class="stat-label">Best Match (auto_03_80452694)</div>
+  </div>
+</div>
+
+<div class="grid">
+  <!-- Model Performance -->
+  <div class="card">
+    <h2><span class="icon">&#x1F4CA;</span> Model Performance</h2>
+    <div class="model-bar-wrap">
+      <div class="model-bar-header">
+        <span class="model-name" style="color:var(--purple);">sonnet</span>
+        <span class="model-stat">360 attempts &middot; 0.2% avg</span>
+      </div>
+      <div class="model-bar"><div class="model-bar-fill" style="width:75.5%;background:var(--purple);">75.5% of attempts</div></div>
+    </div>
+    <div class="model-bar-wrap">
+      <div class="model-bar-header">
+        <span class="model-name" style="color:var(--accent);">haiku</span>
+        <span class="model-stat">116 attempts &middot; 0.0% avg</span>
+      </div>
+      <div class="model-bar"><div class="model-bar-fill" style="width:24.3%;background:var(--accent);">24.3%</div></div>
+    </div>
+    <div class="model-bar-wrap">
+      <div class="model-bar-header">
+        <span class="model-name" style="color:var(--green);">devstral</span>
+        <span class="model-stat">1 attempt &middot; 0.0% avg</span>
+      </div>
+      <div class="model-bar"><div class="model-bar-fill" style="width:2%;background:var(--green);">0.2%</div></div>
+    </div>
+    <div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border);">
+      <div class="stat-row"><span class="stat-label">Local models (qwen7b/14b/devstral/qwen3coder)</span><span style="color:var(--green);font-size:0.85em;">Not yet deployed</span></div>
+      <div class="stat-row"><span class="stat-label">New refinement pipeline</span><span style="color:var(--accent);font-size:0.85em;">Ready (threshold: 25%)</span></div>
+    </div>
+  </div>
+
+  <!-- Model Ladder -->
+  <div class="card">
+    <h2><span class="icon">&#x1F3AF;</span> Model Routing Ladder</h2>
+    <div class="ladder">
+      <div class="ladder-step">
+        <div class="ladder-rank" style="background:var(--green);">0</div>
+        <div class="ladder-info">
+          <div class="ladder-model">qwen3:7b</div>
+          <div class="ladder-detail">Easy fns: &ge;80% match, &le;200B</div>
+        </div>
+        <span class="ladder-gpu">GTX 1060</span>
+      </div>
+      <div class="ladder-step">
+        <div class="ladder-rank" style="background:var(--accent);">1</div>
+        <div class="ladder-info">
+          <div class="ladder-model">qwen3:14b</div>
+          <div class="ladder-detail">Medium fns: &ge;50% match</div>
+        </div>
+        <span class="ladder-gpu">RTX 5060 Ti</span>
+      </div>
+      <div class="ladder-step">
+        <div class="ladder-rank" style="background:var(--orange);">2</div>
+        <div class="ladder-info">
+          <div class="ladder-model">devstral:24b</div>
+          <div class="ladder-detail">Escalation tier</div>
+        </div>
+        <span class="ladder-gpu">RTX 5060 Ti</span>
+      </div>
+      <div class="ladder-step">
+        <div class="ladder-rank" style="background:var(--purple);">3</div>
+        <div class="ladder-info">
+          <div class="ladder-model">qwen3-coder:30b</div>
+          <div class="ladder-detail">Complex structural fixes</div>
+        </div>
+        <span class="ladder-gpu">RTX 5060 Ti</span>
+      </div>
+      <div class="ladder-step active">
+        <div class="ladder-rank" style="background:var(--pink);">4</div>
+        <div class="ladder-info">
+          <div class="ladder-model">haiku</div>
+          <div class="ladder-detail">API fallback</div>
+        </div>
+        <span class="ladder-gpu">API</span>
+      </div>
+      <div class="ladder-step active">
+        <div class="ladder-rank" style="background:var(--red);">5</div>
+        <div class="ladder-info">
+          <div class="ladder-model">sonnet</div>
+          <div class="ladder-detail">Final escalation</div>
+        </div>
+        <span class="ladder-gpu">API</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="grid">
+  <!-- Size Distribution -->
+  <div class="card">
+    <h2><span class="icon">&#x1F4E6;</span> Unit Size Distribution</h2>
+    <div class="bucket-row">
+      <span class="bucket-label">Tiny (&lt;100B)</span>
+      <div class="bucket-bar"><div class="bucket-fill" style="width:19.1%;background:var(--green);">91</div></div>
+      <span class="bucket-count">19%</span>
+    </div>
+    <div class="bucket-row">
+      <span class="bucket-label">Small (100-500B)</span>
+      <div class="bucket-bar"><div class="bucket-fill" style="width:42.1%;background:var(--accent);">201</div></div>
+      <span class="bucket-count">42%</span>
+    </div>
+    <div class="bucket-row">
+      <span class="bucket-label">Med (500B-2kB)</span>
+      <div class="bucket-bar"><div class="bucket-fill" style="width:28.1%;background:var(--orange);">134</div></div>
+      <span class="bucket-count">28%</span>
+    </div>
+    <div class="bucket-row">
+      <span class="bucket-label">Large (2-10kB)</span>
+      <div class="bucket-bar"><div class="bucket-fill" style="width:9.4%;background:var(--purple);">45</div></div>
+      <span class="bucket-count">9%</span>
+    </div>
+    <div class="bucket-row">
+      <span class="bucket-label">Huge (&gt;10kB)</span>
+      <div class="bucket-bar"><div class="bucket-fill" style="width:2%;background:var(--red);">6</div></div>
+      <span class="bucket-count">1%</span>
+    </div>
+    <div style="margin-top:12px;">
+      <div class="route-box">
+        <div class="route-title">Per-Function Routing (NEW)</div>
+        <div class="route-desc">
+          During surgical refinement, each broken function is routed independently:<br>
+          &ge;80% &amp; &le;200B <span class="route-arrow">&rarr;</span> Level 0 (cheapest) &nbsp;|&nbsp;
+          &ge;50% <span class="route-arrow">&rarr;</span> Same tier &nbsp;|&nbsp;
+          &lt;50% <span class="route-arrow">&rarr;</span> Escalate +1
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Council Dialogue -->
+  <div class="card">
+    <h2><span class="icon">&#x1F4AC;</span> Council Dialogue (Recent)</h2>
+    <div class="dialogue" id="dialogue">
+      <div class="msg">
+        <div class="msg-avatar" style="background:var(--purple);">TH</div>
+        <div class="msg-body">
+          <div class="msg-header">
+            <span class="msg-name" style="color:var(--purple);">tom_hook</span>
+            <span class="msg-time">Apr 29, 18:13</span>
+          </div>
+          <div class="msg-text">Dispatching <code>auto_03_80452694_text</code> (144B, 1 fn) to <strong>sonnet</strong></div>
+          <div class="msg-result partial">87.0% match &mdash; refinement candidate</div>
+        </div>
+      </div>
+
+      <div class="msg">
+        <div class="msg-avatar" style="background:var(--red);">SN</div>
+        <div class="msg-body">
+          <div class="msg-header">
+            <span class="msg-name" style="color:var(--red);">sonnet</span>
+            <span class="msg-time">Apr 29, 18:13</span>
+          </div>
+          <div class="msg-text">Generated C for <code>auto_03_80452694_text</code>. Compiled OK, 87% instruction match. Some register allocation diffs remain &mdash; likely a constant or cast issue.</div>
+          <div class="msg-result partial">Needs refinement (above 25% threshold)</div>
+        </div>
+      </div>
+
+      <div class="msg">
+        <div class="msg-avatar" style="background:var(--orange);">IR</div>
+        <div class="msg-body">
+          <div class="msg-header">
+            <span class="msg-name" style="color:var(--orange);">iterative_refiner</span>
+            <span class="msg-time">pending</span>
+          </div>
+          <div class="msg-text">Ready to refine. At 87% with 1 fn, routing to <strong>level 0</strong> (qwen7b) &mdash; easy fix, cheap model. Will attempt surgical repair with compilation feedback.</div>
+        </div>
+      </div>
+
+      <div class="msg">
+        <div class="msg-avatar" style="background:var(--green);">DV</div>
+        <div class="msg-body">
+          <div class="msg-header">
+            <span class="msg-name" style="color:var(--green);">devstral</span>
+            <span class="msg-time">Apr 29, 15:16</span>
+          </div>
+          <div class="msg-text">Attempted <code>auto_fn_8000AAB4_text</code> (180B). Compilation failed &mdash; missing struct definitions and incorrect header includes for this TU.</div>
+          <div class="msg-result fail">0% &mdash; compile error</div>
+        </div>
+      </div>
+
+      <div class="msg">
+        <div class="msg-avatar" style="background:var(--purple);">TH</div>
+        <div class="msg-body">
+          <div class="msg-header">
+            <span class="msg-name" style="color:var(--purple);">tom_hook</span>
+            <span class="msg-time">Apr 27, 04:10</span>
+          </div>
+          <div class="msg-text">Batch run: 477 units dispatched across sonnet/haiku/devstral. Most compile but produce 0% match &mdash; the mwcceppc GC/1.3.2 codegen patterns are tricky. Local models (qwen) not yet in rotation.</div>
+        </div>
+      </div>
+
+      <div class="msg">
+        <div class="msg-avatar" style="background:var(--accent);">CL</div>
+        <div class="msg-body">
+          <div class="msg-header">
+            <span class="msg-name" style="color:var(--accent);">council_learning</span>
+            <span class="msg-time">system</span>
+          </div>
+          <div class="msg-text">
+            <strong>Strategy notes:</strong> Current 0.2% avg suggests models need better context &mdash; Ghidra decompiler output, struct definitions, and neighboring matched functions as examples. The new refinement pipeline (25% threshold + per-function routing) should help units that compile but don't match. Priority: get local models (qwen7b/14b on dual GPUs) into the rotation for cheap iteration.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Attempts Table -->
+<div class="card">
+  <h2><span class="icon">&#x1F552;</span> Recent Attempts</h2>
+  <table class="recent-table">
+    <thead>
+      <tr><th>Unit</th><th>Model</th><th>Size</th><th>Match</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>auto_03_80452694_text</code></td>
+        <td style="color:var(--purple);">sonnet</td>
+        <td>144B</td>
+        <td><span class="pct-badge" style="background:rgba(210,153,34,0.15);color:var(--orange);">87.0%</span></td>
+        <td>Refine candidate</td>
+      </tr>
+      <tr>
+        <td><code>auto_fn_8000AAB4_text</code></td>
+        <td style="color:var(--green);">devstral</td>
+        <td>180B</td>
+        <td><span class="pct-badge" style="background:rgba(248,81,73,0.15);color:var(--red);">0.0%</span></td>
+        <td>Compile fail</td>
+      </tr>
+      <tr>
+        <td><code>auto_fn_802B8F40_text</code></td>
+        <td style="color:var(--purple);">sonnet</td>
+        <td>1840B</td>
+        <td><span class="pct-badge" style="background:rgba(248,81,73,0.15);color:var(--red);">0.0%</span></td>
+        <td>No match</td>
+      </tr>
+      <tr>
+        <td><code>auto_03_802B8D00_text</code></td>
+        <td style="color:var(--purple);">sonnet</td>
+        <td>1152B</td>
+        <td><span class="pct-badge" style="background:rgba(248,81,73,0.15);color:var(--red);">0.0%</span></td>
+        <td>No match</td>
+      </tr>
+      <tr>
+        <td><code>auto_fn_802B8CC8_text</code></td>
+        <td style="color:var(--purple);">sonnet</td>
+        <td>116B</td>
+        <td><span class="pct-badge" style="background:rgba(248,81,73,0.15);color:var(--red);">0.0%</span></td>
+        <td>No match</td>
+      </tr>
+      <tr>
+        <td><code>auto_03_802874D4_text</code></td>
+        <td style="color:var(--purple);">sonnet</td>
+        <td>6184B</td>
+        <td><span class="pct-badge" style="background:rgba(248,81,73,0.15);color:var(--red);">0.0%</span></td>
+        <td>No match</td>
+      </tr>
+      <tr>
+        <td><code>auto_fn_802874D0_text</code></td>
+        <td style="color:var(--purple);">sonnet</td>
+        <td>12B</td>
+        <td><span class="pct-badge" style="background:rgba(248,81,73,0.15);color:var(--red);">0.0%</span></td>
+        <td>No match</td>
+      </tr>
+      <tr>
+        <td><code>auto_fn_802799E8_text</code></td>
+        <td style="color:var(--purple);">sonnet</td>
+        <td>596B</td>
+        <td><span class="pct-badge" style="background:rgba(248,81,73,0.15);color:var(--red);">0.0%</span></td>
+        <td>No match</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="refresh-note">
+  Data from <code>tools/model_history.json</code> &middot; Refresh by re-running <code>python tools/council_dashboard_refresh.py</code> or after any pipeline run
+</div>
+
+<script>
+// Auto-refresh data display when file changes (placeholder for live mode)
+// In live mode, this would poll model_history.json via a local server
+document.title = `ACCF Council [477 units] — ${new Date().toLocaleDateString()}`;
+</script>
+</body>
+</html>

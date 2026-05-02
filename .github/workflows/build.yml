@@ -1,0 +1,188 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    # This is a *private* build container.
+    # See docs/github_actions.md for more information.
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/strayreign/accf-decomp-build:main
+      credentials:
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [RUUE01]
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        submodules: recursive
+
+    - name: Git config
+      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+    - name: Restore timestamps
+      run: |
+        uv run https://raw.githubusercontent.com/MestreLion/git-tools/refs/tags/v2022.12/git-restore-mtime \
+            --merge --commit-time
+
+    - name: Prepare
+      run: cp -a /orig .
+
+    - name: Cache build
+      uses: actions/cache@v4
+      with:
+        path: |
+          build
+          .ninja_deps
+          .ninja_log
+        key: ${{ runner.os }}-${{ matrix.version }}-${{ github.sha }}
+        restore-keys: ${{ runner.os }}-${{ matrix.version }}-
+
+    - name: Build
+      run: |
+        python3 configure.py --map --version ${{ matrix.version }} \
+            --binutils /binutils --compilers /compilers
+        ninja all_source build/${{ matrix.version }}/report.json
+
+    - name: Upload map files
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.version }}_maps
+        path: build/${{ matrix.version }}/**/*.MAP
+
+    - name: Upload report
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.version }}_report
+        path: build/${{ matrix.version }}/report.json
+
+    # ── Download previous report for comparison ───────────────────────────────
+    - name: Download previous report (for diff)
+      uses: dawidd6/action-download-artifact@v6
+      continue-on-error: true
+      with:
+        workflow: build.yml
+        workflow_conclusion: success
+        name: ${{ matrix.version }}_report
+        path: prev_report/
+        if_no_artifact_found: warn
+
+    # ── Generate progress summary and post as commit/PR comment ──────────────
+    - name: Generate progress summary
+      run: |
+        python3 - << 'PYEOF'
+        import json, os
+        from pathlib import Path
+
+        current_file = Path("build/${{ matrix.version }}/report.json")
+        prev_file    = Path("prev_report/report.json")
+
+        with open(current_file) as f:
+            current = json.load(f)
+
+        overall  = current.get("measures", {})
+        pct      = overall.get("fuzzy_match_percent", 0.0)
+        m_fns    = overall.get("matched_functions", 0)
+        t_fns    = overall.get("total_functions", 0)
+        m_code   = overall.get("matched_code", 0)
+        t_code   = overall.get("total_code", 0)
+
+        lines = [
+            "## 📊 Build / ${{ matrix.version }} — `${{ github.ref_name }}`",
+            "",
+            "| Metric | Value |",
+            "|--------|-------|",
+            f"| Fuzzy match | **{pct:.4f}%** |",
+            f"| Functions matched | {m_fns} / {t_fns} |",
+            f"| Code matched | {m_code} / {t_code} bytes |",
+            "",
+        ]
+
+        # Incomplete text units
+        incomplete = [
+            (u["name"].replace("main/",""), u["measures"]["fuzzy_match_percent"])
+            for u in current.get("units", [])
+            if "_text" in u.get("name","")
+            and u.get("measures",{}).get("fuzzy_match_percent", 100.0) < 100.0
+        ]
+        incomplete.sort(key=lambda x: -x[1])
+        if incomplete:
+            lines += [f"### ⚠️ {len(incomplete)} incomplete text unit(s)"]
+            for nm, p in incomplete:
+                lines.append(f"- `{nm}` — {p:.1f}%")
+        else:
+            lines += ["### ✅ All text units matched!"]
+
+        # Diff vs previous build
+        if prev_file.exists():
+            with open(prev_file) as f:
+                prev = json.load(f)
+            prev_pct = prev.get("measures", {}).get("fuzzy_match_percent", 0.0)
+            delta = pct - prev_pct
+            if abs(delta) > 0.0001:
+                sign = "+" if delta > 0 else ""
+                lines += [
+                    "",
+                    "### 📈 vs previous build",
+                    f"Overall: {prev_pct:.4f}% → {pct:.4f}% (**{sign}{delta:.4f}%**)",
+                ]
+                prev_map = {
+                    u["name"]: u.get("measures",{}).get("fuzzy_match_percent", 0.0)
+                    for u in prev.get("units", [])
+                }
+                changed = [
+                    (u["name"].replace("main/",""),
+                     prev_map.get(u["name"], 0.0),
+                     u["measures"].get("fuzzy_match_percent", 0.0))
+                    for u in current.get("units", [])
+                    if "_text" in u.get("name","")
+                    and abs(u.get("measures",{}).get("fuzzy_match_percent",0.0) - prev_map.get(u["name"],0.0)) > 0.01
+                ]
+                for nm, old, new in sorted(changed, key=lambda x: -(x[2]-x[1])):
+                    star = " 🎉" if new >= 100.0 else ""
+                    sign2 = "+" if new > old else ""
+                    lines.append(f"- `{nm}`: {old:.1f}% → {new:.1f}% ({sign2}{new-old:.1f}%){star}")
+
+        body = "\n".join(lines)
+        print(body)
+        with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+            f.write(body + "\n")
+        with open("progress_summary.md", "w") as f:
+            f.write(body + "\n")
+        PYEOF
+
+    - name: Post progress comment (push)
+      if: github.event_name == 'push'
+      uses: peter-evans/commit-comment@v3
+      continue-on-error: true
+      with:
+        body-path: progress_summary.md
+
+    - name: Find existing PR comment
+      if: github.event_name == 'pull_request'
+      uses: peter-evans/find-comment@v3
+      id: find-comment
+      continue-on-error: true
+      with:
+        issue-number: ${{ github.event.pull_request.number }}
+        comment-author: github-actions[bot]
+        body-includes: "Build / ${{ matrix.version }}"
+
+    - name: Post or update PR comment
+      if: github.event_name == 'pull_request'
+      uses: peter-evans/create-or-update-comment@v4
+      continue-on-error: true
+      with:
+        comment-id: ${{ steps.find-comment.outputs.comment-id }}
+        issue-number: ${{ github.event.pull_request.number }}
+        body-path: progress_summary.md
+        edit-mode: replace

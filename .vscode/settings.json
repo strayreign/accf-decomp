@@ -1,0 +1,38 @@
+{
+  "[c]": {
+    "files.encoding": "utf8",
+    "editor.defaultFormatter": "xaver.clang-format",
+    "editor.formatOnSave": true
+  },
+  "[cpp]": {
+    "files.encoding": "utf8",
+    "editor.defaultFormatter": "xaver.clang-format",
+    "editor.formatOnSave": true
+  },
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  },
+  "files.autoSave": "onFocusChange",
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  "files.associations": {
+    "*.inc": "c",
+    "*.pch": "c",
+    "*.pch++": "cpp",
+    ".clangd": "yaml"
+  },
+  "C_Cpp.intelliSenseEngine": "disabled",
+  "json.schemas": [
+    {
+      "fileMatch": ["config/**/config.json"],
+      "url": "./doc/config_schema.json"
+    },
+    {
+      "fileMatch": ["config/**/objects.json"],
+      "url": "./doc/objects_schema.json"
+    }
+  ],
+  "python.analysis.typeCheckingMode": "standard",
+  "cmake.ignoreCMakeListsMissing": true,
+  "sonarlint.pathToCompileCommands": "${workspaceFolder}/compile_commands.json"
+}
